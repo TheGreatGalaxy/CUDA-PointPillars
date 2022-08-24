@@ -15,21 +15,22 @@ kMmcpoyM = True
 kPointNum = "find points num"
 kPointNumM = True
 
-
-kPointNum = "find points num"
-kPointNumM = True
-
-kPreprocess = "TIME: generateVoxels"
-kPreprocessM = True
-
 kValidPillars = "find pillar_num"
 kValidPillarsM = True
 
-kPfe = "TIME: generateFeatures"
-kPfeM = True
 
-kRpn = "TIME: doinfer"
-kRpnM = True
+kGenerateVoxels = "TIME: generateVoxels"
+kGenerateVoxelsM = True
+
+
+kGenerateFeatures = "TIME: generateFeatures"
+kGenerateFeaturesM = True
+
+kTotalPreprocess = "total preprocess"
+kTotalPreprocessM = True
+
+kDoInfer = "TIME: doinfer"
+kDoInferM = True
 
 kPostProcess = "TIME: doPostprocessCuda"
 kPostProcessM = True
@@ -37,9 +38,9 @@ kRunDetectionSum = "TIME: pointpillar"
 kRunDetectionSumM = True
 
 
-kLevel1 = [kMalloc, kMmcopy, kPointNum, kPreprocess, kValidPillars, kPfe, kRpn,
+kLevel1 = [kMalloc, kMmcopy, kPointNum, kGenerateVoxels, kValidPillars, kTotalPreprocess, kGenerateFeatures, kDoInfer,
            kPostProcess, kRunDetectionSum]
-kLevel1PlotMask = [kMallocM, kMmcpoyM, kPointNumM, kPreprocessM, kValidPillarsM, kPfeM, kRpnM,
+kLevel1PlotMask = [kMallocM, kMmcpoyM, kPointNumM, kGenerateVoxelsM, kValidPillarsM, kTotalPreprocessM, kGenerateFeaturesM, kDoInferM,
                    kPostProcessM, kRunDetectionSumM]
 kLevel1LastEle = [kPointNum, kValidPillars]
 
@@ -74,6 +75,18 @@ class InferenceInfo:
         assert(len(malloc_time) == len(total))
         for i in range(len(malloc_time)):
             total[i] += (malloc_time[i] + mmcopy_time[i])
+
+        generate_voxel_time = self.level1[kLevel1.index(kGenerateVoxels)]
+        generate_feat_time = self.level1[kLevel1.index(kGenerateFeatures)]
+        assert(len(malloc_time) == len(generate_voxel_time))
+        assert(len(malloc_time) == len(generate_feat_time))
+
+        total_preprocess = self.level1[kLevel1.index(kTotalPreprocess)]
+        for i in range(len(malloc_time)):
+            t = malloc_time[i] + mmcopy_time[i] + \
+                generate_feat_time[i] + generate_voxel_time[i]
+            total_preprocess.append(t)
+
         if kShowFig1:
             fig = plt.figure(figsize=(19, 10), dpi=100)
             gs = GridSpec(5, 1, figure=fig)
@@ -123,13 +136,14 @@ def Run(file_name: str, info: InferenceInfo):
 
 
 if __name__ == "__main__":
-    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/CUDA_PointPillars_xavier_run.log'
-    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/xavier_all_log.log'
-    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/xavier_malloc_all_log.log'
-    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/xavier_malloc_run_apollo_loading.log'
-    file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/xavier_malloc_run_cpu_loading.log'
+    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/test_analyze/CUDA_PointPillars_xavier_run.log'
+    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/test_analyze/xavier_mallocmanaged_all_log.log'
+    file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/test_analyze/xavier_malloc_all_log.log'
+    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/test_analyze/xavier_malloc_run_apollo_loading.log'
+    # file_name = '/home/guangtong/workspace/PointPillars/CUDA-PointPillars/test_analyze/xavier_malloc_run_cpu_loading.log'
 
     inference_info = InferenceInfo()
     Run(file_name, inference_info)
     print(inference_info)
-    inference_info.plot("CUDA_PointPillars FP16 90\%\cpu_loading ", "xavier")
+    inference_info.plot(
+        'CUDA_PointPillars FP16 os_loading malloc api', "xavier")
